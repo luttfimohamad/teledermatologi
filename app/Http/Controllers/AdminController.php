@@ -41,7 +41,7 @@ class AdminController extends Controller
             $user = Auth::guard('webadmin')->user();
 
             // $token = $user->createToken('Admin')->accessToken;
-            $token = $user->createToken($user->name)->plainTextToken;
+            $token = $user->createToken('Admin')->accessToken;
 
             return response()->json([
                 'success' => true,

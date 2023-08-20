@@ -24,6 +24,13 @@ class DatabaseSeeder extends Seeder
             'email' => 'satriamandala@gmail.com',
             'password' => Hash::make('satria123')
         ]);
+        Admin::insert([
+            'name' => 'Fini Latukonsina',
+            'gender' => 'Perempuan',
+            'phone' => '082345442674',
+            'email' => 'finilatukonsina@gmail.com',
+            'password' => Hash::make('fini123')
+        ]);
 
         // Doctor
         DB::table('doctors')->insert([

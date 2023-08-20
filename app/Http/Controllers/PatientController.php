@@ -8,16 +8,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 
 class PatientController extends Controller
 {
-    public function index()
-    {
-        $patient = Patient::find(Auth::user()->id);
-        return response()->json($patient);
-    }
-
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -51,9 +44,9 @@ class PatientController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Successfully created user!',
+            'message' => 'Successfully created patient!',
             'status' => '200',
-            'user' => $patient
+            'patient' => $patient
         ], 200);
     }
 
@@ -85,35 +78,67 @@ class PatientController extends Controller
                 'success' => true,
                 'message' => 'Successfully logged in!',
                 'status' => '200',
-                'token' => $token,
-                'data' => $user
+                'patient' => $user,
+                'token' => $token
             ], 200);
         } else {
             return response()->json([
+                'success' => false,
                 'message' => 'Invalid credentials',
-                'status' => '401',
+                'status' => '401'
             ]);
         }
     }
 
-    public function edit(Request $request)
+    public function get_all_patients()
+    {
+        $patients = Patient::all();
+        return response()->json([
+            'success' => true,
+            'message' => 'Successfully retrieved all patients!',
+            'status' => '200',
+            'patient' => $patients
+        ], 200);
+    }
+
+    public function get_a_singgle_patient($id)
+    {
+        $patient = Patient::find($id);
+        return response()->json([
+            'success' => true,
+            'message' => 'Successfully retrieved patient!',
+            'status' => '200',
+            'patient' => $patient
+        ], 200);
+    }
+
+    public function update(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string'],
             'gender' => ['required'],
-            'phone' => ['required'],
+            'phone' => ['required', 'string']
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation Error',
+                'status' => 422,
                 'error' => $validator->errors(),
-                'status' => '422'
-            ]);
+            ], 422);
         }
 
-        $patient = Patient::where('email', Auth::user()->email);
+        $patient = Patient::where('email', Auth::user()->email)->first();
+
+        if (!$patient) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Patient not found',
+                'status' => 404,
+            ], 404);
+        }
+
         $patient->update([
             'name' => $request->name,
             'gender' => $request->gender,
@@ -122,8 +147,9 @@ class PatientController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Successfully updated user!',
-            'user' => $patient,
+            'message' => 'Successfully updated patient!',
+            'status' => 200,
+            'patient' => $patient,
         ], 200);
     }
 
@@ -137,20 +163,30 @@ class PatientController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation Error',
+                'status' => 422,
                 'error' => $validator->errors(),
-                'status' => '422'
-            ]);
+
+            ], 422);
         }
 
-        $patient = Patient::where('email', Auth::user()->email);
+        $patient = Patient::where('email', Auth::user()->email)->first();
+
+        if (!$patient) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Patient not found',
+                'status' => 404,
+            ], 404);
+        }
+
         $patient->update([
-            'password' => bcrypt($request->password),
+            'password' => Hash::make($request->password),
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Successfully updated user!',
-            'user' => $patient,
+            'message' => 'Password successfully updated!',
+            'status' => 200,
         ], 200);
     }
 
@@ -158,17 +194,28 @@ class PatientController extends Controller
     {
         /** @var \App\Models\Patient $user **/
         $user = Auth::guard('apipatient')->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not authenticated',
+                'status' => 401,
+            ], 401);
+        }
+
         $accessToken = $user->token();
+        $accessTokenId = $accessToken->id;
+
         DB::table('oauth_refresh_tokens')
-            ->where('access_token_id', $accessToken->id)
+            ->where('access_token_id', $accessTokenId)
             ->update(['revoked' => true]);
+
         $accessToken->revoke();
 
         return response()->json([
             'success' => true,
-            'message' => 'Log Out Successful',
-            'status' => 200,
-            'data' => 'Unauthorized',
+            'message' => 'Logged out successfully',
+            'status' => 200
         ]);
     }
 }

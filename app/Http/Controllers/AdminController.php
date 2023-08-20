@@ -9,17 +9,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Hash;
 
 class AdminController extends Controller
 {
-    public function index()
-    {
-        // $doctor = Doctor::all();
-        // return response()->json($doctor);
-        return response()->json(['user' => Auth::guard('apiadmin')->user()], 200);
-    }
-
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -40,15 +33,14 @@ class AdminController extends Controller
             /** @var \App\Models\Admin $user **/
             $user = Auth::guard('webadmin')->user();
 
-            // $token = $user->createToken('Admin')->accessToken;
             $token = $user->createToken('Admin')->accessToken;
 
             return response()->json([
                 'success' => true,
                 'message' => 'Successfully logged in!',
                 'status' => '200',
-                'token' => $token,
-                'data' => $user
+                'admin' => $user,
+                'token' => $token
             ], 200);
         } else {
             return response()->json([
@@ -56,6 +48,36 @@ class AdminController extends Controller
                 'message' => 'Invalid credentials',
                 'status' => '401'
             ]);
+        }
+    }
+
+    public function get_all_admin()
+    {
+        $admin = Admin::all();
+        return response()->json([
+            'success' => true,
+            'message' => 'Successfully retrieved all admins!',
+            'status' => '200',
+            'admin' => $admin
+        ], 200);
+    }
+
+    public function get_a_singgle_admin($id)
+    {
+        $admin = Admin::find($id);
+        if ($admin) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Successfully retrieved a admin!',
+                'status' => '200',
+                'admin' => $admin
+            ], 200);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin not found!',
+                'status' => '404'
+            ], 404);
         }
     }
 
@@ -73,6 +95,7 @@ class AdminController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation Error',
+                'status' => '422',
                 'error' => $validator->errors()
             ], 422);
         }
@@ -88,12 +111,13 @@ class AdminController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Successfully created user!',
-            'user' => $admin
+            'message' => 'Successfully created admin!',
+            'status' => '200',
+            'admin' => $admin
         ], 200);
     }
 
-    public function edit_admin(Request $request)
+    public function update_admin(Request $request, $admin_id)
     {
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string'],
@@ -107,73 +131,56 @@ class AdminController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation Error',
+                'status' => 422,
                 'error' => $validator->errors()
             ], 422);
         }
 
-        $id = Auth::user()->id;
-        $admin = Admin::find($id);
+        $admin = Admin::find($admin_id);
+
+        if (!$admin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin not found',
+                'status' => 404,
+            ], 404);
+        }
 
         $admin->update([
             'name' => $request->name,
             'gender' => $request->gender,
             'phone' => $request->phone,
             'email' => $request->email,
-            'password' =>  bcrypt($request->password)
+            'password' => Hash::make($request->password),
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Successfully updated user!',
-            'user' => $admin
+            'message' => 'Successfully updated admin!',
+            'status' => 200,
+            'admin' => $admin
         ], 200);
     }
 
-    public function edit_patient(Request $request, $patient_email)
+    public function delete_admin($admin_id)
     {
-        $patient = Patient::where('email', $patient_email)->first();
+        $admin = Admin::find($admin_id);
 
-        $validator = Validator::make($request->all(), [
-            'name' => ['required', 'string'],
-            'gender' => ['required'],
-            'phone' => ['required'],
-            'email' => ['required', 'email'],
-            'password' => ['required', 'min:8']
-        ]);
-
-        if ($validator->fails()) {
+        if (!$admin) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation Error',
-                'error' => $validator->errors(),
-                'status' => '422'
-            ]);
+                'message' => 'Admin not found',
+                'status' => 404,
+            ], 404);
         }
 
-        $patient->update([
-            'name' => $request->name,
-            'gender' => $request->gender,
-            'phone' => $request->phone,
-            'email' => $request->email,
-            'password' =>  bcrypt($request->password)
-        ]);
+        $admin->delete();
 
         return response()->json([
             'success' => true,
-            'message' => 'Successfully updated user!',
-            'user' => $patient
-        ], 200);
-    }
-
-    public function delete_patient(Request $request, $patient_email)
-    {
-        $patient = Patient::where('email', $patient_email);
-        $patient->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Successfully deleted user!',
-            'user' => $patient
+            'message' => 'Successfully deleted admin!',
+            'status' => 200,
+            'admin' => $admin
         ], 200);
     }
 
@@ -182,6 +189,7 @@ class AdminController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string'],
             'gender' => ['required'],
+            'specialization' => ['required'],
             'phone' => ['required'],
             'email' => ['required', 'email'],
             'password' => ['required', 'min:8']
@@ -191,14 +199,15 @@ class AdminController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation Error',
+                'status' => '422',
                 'error' => $validator->errors(),
-                'status' => '422'
             ], 422);
         }
 
         $doctor = new Doctor([
             'name' => $request->name,
             'gender' => $request->gender,
+            'specialization' => $request->specialization,
             'phone' => $request->phone,
             'email' => $request->email,
             'password' =>  bcrypt($request->password)
@@ -207,15 +216,92 @@ class AdminController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Successfully created user!',
+            'message' => 'Successfully created doctor!',
             'status' => '200',
-            'user' => $doctor
+            'doctor' => $doctor
         ], 200);
     }
 
-    public function edit_doctor(Request $request, $doctor_email)
+    public function update_doctor(Request $request, $doctor_id)
     {
-        $doctor = Doctor::where('email', $doctor_email)->first();
+        $doctor = Doctor::find($doctor_id);
+
+        if (!$doctor) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Doctor not found',
+                'status' => 404,
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => ['required', 'string'],
+            'gender' => ['required'],
+            'specialization' => ['required'],
+            'phone' => ['required'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'min:8']
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation Error',
+                'status' => '422',
+                'error' => $validator->errors(),
+            ], 422);
+        }
+
+        $doctor->update([
+            'name' => $request->name,
+            'gender' => $request->gender,
+            'specialization' => $request->specialization,
+            'phone' => $request->phone,
+            'email' => $request->email,
+            'password' => Hash::make($request->password)
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Successfully updated doctor!',
+            'status' => '200',
+            'doctor' => $doctor
+        ], 200);
+    }
+
+    public function delete_doctor(Request $request, $doctor_id)
+    {
+        $doctor = Doctor::find($doctor_id);
+
+        if (!$doctor) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Doctor not found',
+                'status' => 404,
+            ], 404);
+        }
+
+        $doctor->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Successfully deleted doctor!',
+            'status' => "200",
+            'doctor' => $doctor,
+        ], 200);
+    }
+
+    public function update_patient(Request $request, $patient_id)
+    {
+        $patient = Patient::find($patient_id);
+
+        if (!$patient) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Patient not found',
+                'status' => 404,
+            ], 404);
+        }
 
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string'],
@@ -229,34 +315,46 @@ class AdminController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation Error',
-                'error' => $validator->errors()
+                'error' => $validator->errors(),
+                'status' => 422
             ], 422);
         }
 
-        $doctor->update([
+        $patient->update([
             'name' => $request->name,
             'gender' => $request->gender,
             'phone' => $request->phone,
             'email' => $request->email,
-            'password' =>  bcrypt($request->password)
+            'password' => Hash::make($request->password)
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Successfully updated user!',
-            'user' => $doctor
+            'message' => 'Successfully updated patient!',
+            'status' => 200,
+            'patient' => $patient
         ], 200);
     }
 
-    public function delete_doctor(Request $request, $doctor_email)
+    public function delete_patient(Request $request, $patient_id)
     {
-        $doctor = Doctor::where('email', $doctor_email);
-        $doctor->delete();
+        $patient = Patient::find($patient_id);
+
+        if (!$patient) {
+            return response()->json([
+                'success' => false,
+                'message' => 'patient not found',
+                'status' => 404,
+            ], 404);
+        }
+
+        $patient->delete();
 
         return response()->json([
             'success' => true,
-            'message' => 'Successfully deleted user!',
-            'user' => $doctor
+            'message' => 'Successfully deleted patient!',
+            'status' => 200,
+            'patient' => $patient,
         ], 200);
     }
 
@@ -264,17 +362,28 @@ class AdminController extends Controller
     {
         /** @var \App\Models\Admin $user **/
         $user = Auth::guard('apiadmin')->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not authenticated',
+                'status' => 401,
+            ], 401);
+        }
+
         $accessToken = $user->token();
+        $accessTokenId = $accessToken->id;
+
         DB::table('oauth_refresh_tokens')
-            ->where('access_token_id', $accessToken->id)
+            ->where('access_token_id', $accessTokenId)
             ->update(['revoked' => true]);
+
         $accessToken->revoke();
 
         return response()->json([
             'success' => true,
-            'message' => 'Log Out Successful',
-            'status' => 200,
-            'data' => 'Unauthorized'
+            'message' => 'Logged out successfully',
+            'status' => 200
         ]);
     }
 }

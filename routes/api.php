@@ -29,30 +29,36 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth:apiadmin')->group(function () {
-    Route::get('admin', [AdminController::class, 'index'])->name('admin.dashboard');
-    Route::post('admin/add_admin', [AdminController::class, 'add_admin'])->name('admin.addAdmin');
-    Route::put('admin/edit_admin', [AdminController::class, 'edit_admin'])->name('admin.editAdmin');
+    // for admin
+    Route::get('admins', [AdminController::class, 'get_all_admin'])->name('admins.dashboard'); //testing aman
+    Route::get('admin/{id}', [AdminController::class, 'get_a_singgle_admin'])->name('admin.dashboard'); //testing aman
+    Route::post('admin/add/admin', [AdminController::class, 'add_admin'])->name('admin.addAdmin'); //testing aman
+    Route::put('admin/update/admin/{id}', [AdminController::class, 'update_admin'])->name('admin.updateAdmin'); //testing aman
+    Route::delete('admin/delete/admin/{id}', [AdminController::class, 'delete_admin'])->name('admin.deleteAdmin'); //testing aman
+    Route::post('admin', [AdminController::class, 'logout'])->name('admin.logout'); //testing aman
 
-    Route::put('admin/edit_patient/{patient_username}', [AdminController::class, 'edit_patient'])->name('admin.editPatient');
-    Route::delete('admin/delete_patient/{patient_username}',  [AdminController::class, 'delete_patient'])->name('admin.deletePatient');
+    // for doctor
+    Route::post('admin/add/doctor', [AdminController::class, 'add_doctor'])->name('admin.addDoctor'); //testing aman
+    Route::put('admin/update/doctor/{id}', [AdminController::class, 'update_doctor'])->name('admin.updateDoctor'); //testing aman
+    Route::delete('admin/delete/doctor/{id}', [AdminController::class, 'delete_doctor'])->name('admin.deleteDoctor'); //testing aman
 
-    Route::post('admin/add_doctor', [AdminController::class, 'add_doctor'])->name('admin.addDoctor');
-    Route::put('admin/edit_doctor/{doctor_username}', [AdminController::class, 'edit_doctor'])->name('admin.editDoctor');
-    Route::delete('admin/delete_doctor/{doctor_username}', [AdminController::class, 'delete_doctor'])->name('admin.delete   Doctor');
-
-    Route::post('admin', [AdminController::class, 'logout'])->name('admin.logout');
+    // for patient
+    Route::put('admin/update/patient/{id}', [AdminController::class, 'update_patient'])->name('admin.updatePatient'); //testing aman
+    Route::delete('admin/delete/patient/{id}',  [AdminController::class, 'delete_patient'])->name('admin.deletePatient'); //testing aman
 });
 
 Route::middleware('auth:apidoctor')->group(function () {
-    Route::get('doctor', [DoctorController::class, 'index'])->name('doctor.dashboard');
-    Route::put('doctor/edit', [DoctorController::class, 'edit'])->name('doctor.edit');
-    Route::put('doctor/change_password', [DoctorController::class, 'change_password'])->name('doctor.changePassword');
-    Route::post('doctor', [DoctorController::class, 'logout'])->name('doctor.logout');
+    Route::get('doctors', [DoctorController::class, 'get_all_doctors'])->name('doctors.dashboard'); //testing aman
+    Route::get('doctor/{id}', [DoctorController::class, 'get_a_singgle_doctor'])->name('doctor.dashboard'); //testing aman
+    Route::put('doctor/update', [DoctorController::class, 'update'])->name('doctor.update'); //testing aman
+    Route::put('doctor/change_password', [DoctorController::class, 'change_password'])->name('doctor.changePassword'); //testing aman
+    Route::post('doctor', [DoctorController::class, 'logout'])->name('doctor.logout'); //testing aman
 });
 
 Route::middleware('auth:apipatient')->group(function () {
-    Route::get('patient', [PatientController::class, 'index'])->name('patient.dashboard');
-    Route::put('patient/edit', [PatientController::class, 'edit'])->name('patient.edit');
-    Route::put('patient/change_password', [PatientController::class, 'change_password'])->name('patient.changePassword');
-    Route::post('patient', [PatientController::class, 'logout'])->name('patient.logout');
+    Route::get('patients', [PatientController::class, 'get_all_patients'])->name('patients.dashboard'); //testing aman
+    Route::get('patient/{id}', [PatientController::class, 'get_a_singgle_patient'])->name('patient.dashboard'); //testing aman
+    Route::put('patient/update', [PatientController::class, 'update'])->name('patient.update'); //testing aman
+    Route::put('patient/change_password', [PatientController::class, 'change_password'])->name('patient.changePassword'); //testing aman
+    Route::post('patient', [PatientController::class, 'logout'])->name('patient.logout'); //testing aman
 });

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Doctor;
+use App\Models\Patient;
+use App\Models\Detection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -175,5 +177,116 @@ class DoctorController extends Controller
             'message' => 'Logged out successfully',
             'status' => 200
         ]);
+    }
+
+    public function get_all_patients()
+    {
+        $patients = Patient::all();
+        return response()->json([
+            'success' => true,
+            'message' => 'Successfully retrieved all patients!',
+            'status' => '200',
+            'patients' => $patients
+        ], 200);
+    }
+
+    public function get_a_singgle_patient($id)
+    {
+        $patient = Patient::find($id);
+        return response()->json([
+            'success' => true,
+            'message' => 'Successfully retrieved a patient!',
+            'status' => '200',
+            'patient' => $patient
+        ], 200);
+    }
+
+    public function get_all_detections_by_patient_id($patient_id)
+    {
+        $patient = Patient::find($patient_id);
+
+        if (!$patient) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Patient not found',
+                'status' => 404,
+            ], 404);
+        }
+
+        $detections = DB::table('detections')
+            ->where('patient_id', $patient_id)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Successfully retrieved all detections for patient!',
+            'status' => 200,
+            'detections' => $detections
+        ], 200);
+    }
+
+    public function get_a_singgle_detection_by_patient_id($patient_id, $detection_id)
+    {
+        $patient = Patient::find($patient_id);
+
+        if (!$patient) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Patient not found',
+                'status' => 404,
+            ], 404);
+        }
+
+        $detection = DB::table('detections')
+            ->where('patient_id', $patient_id)
+            ->where('id', $detection_id)
+            ->first();
+
+        if (!$detection) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Detection not found',
+                'status' => 404,
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Successfully retrieved detection for patient!',
+            'status' => 200,
+            'detection' => $detection
+        ], 200);
+    }
+
+    public function delete_detection_by_patient_id($patient_id, $detection_id)
+    {
+        $patient = Patient::find($patient_id);
+
+        if (!$patient) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Patient not found',
+                'status' => 404,
+            ], 404);
+        }
+
+        $detection = Detection::find($detection_id);
+
+        if (!$detection) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Detection not found',
+                'status' => 404,
+            ], 404);
+        }
+
+        $detection->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Successfully deleted detection!',
+            'status' => 200,
+            'detection' => $detection
+        ], 200);
     }
 }
